@@ -1,0 +1,526 @@
+<!-- Brick breaker by Hudson Leon
+May 2018,
+For Mr. Miskew
+These are all my modifications for brick breaker
+There are the main mods that I made:
+1. Adding a sound track
+2. Adding TWO power ups
+3. Adding a high Score Text
+4. Adding a Pause Button
+5. Adding an image to the canvas
+
+***Note**
+
+The pause button does not work perfectly but does it's job
+It is a work in progress
+
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BrickBreaker by Hudson Leon</title>
+    <style>
+
+       /* Sets the canvas settings for the playing area */
+        * { padding: 0; margin: 0; }
+        canvas {
+
+            /* Gets image for canvas background  */
+            background-image: url("https://farm4.staticflickr.com/3645/3477043162_0ee2762310.jpg");
+            display: block;
+            margin: 0 auto;
+            border-radius: 10px;
+            padding-top:25px;
+        }
+
+       /* Sets the colour for the First Heading */
+        h1 {
+            color: red;
+        }
+       /* Sets the font size, font and colour for the items within the body */
+        body {
+            color: red;
+            font-size: larger;
+            font-family: 'Arial';
+        }
+
+    </style>
+</head>
+<body>
+<!-- First Title -->
+<h1 align="center" style = "font-family:'Arial' "> Brick Breaker Toronto by Hudson Leon </h1>
+
+<!-- Sets Canvas Dimensions -->
+<canvas id="myCanvas" width="500" height="365"></canvas>
+
+<!-- Loads music for the game -->
+    <audio controls src="gooff.mp3">
+    Your browser does not support the audio element.
+</audio>
+
+
+<h2> Guide </h2>
+<br/>
+<br/>
+<!-- First checkbox for tracking setting -->
+<p style = "font-family:'Arial' " > Activate Tracking: </p>
+<input type="checkbox" name = "checkAddress" onclick = "checkAddress()" />
+<br/>
+<br/>
+<!-- Second checkbox for Pause Button -->
+<p style = "font-family:'Arial' "> Pause Button: </p>
+<input type="checkbox" id = "PauseButton" onclick = "pauseButton()" />
+
+
+
+<script>
+
+    //Sets the background colour of the page
+    document.body.style.backgroundColor = "black";
+
+    //function that will have the paddle follow the ball
+    function checkAddress() {
+
+
+        track = !track;
+        console.log("Click" + track);
+    }
+
+
+    // Blueprint for a ball
+    class Ball {
+
+        constructor(xpos,ypos) {
+
+            this.x = xpos;
+            this.y = ypos;
+            this.ballRadius = 10;
+            this.dx = 2;
+            this.dy = -2;
+
+        }
+    }
+
+    // Blueprint for a paddle
+    class Paddle {
+
+        constructor() {
+            this.paddleHeight = 10;
+            this.paddleWidth = 75;
+            this.paddleX = (canvas.width-this.paddleWidth)/2;
+
+
+        }
+    }
+
+    var canvas = document.getElementById('myCanvas');
+    var ctx = canvas.getContext("2d");
+
+    //ctx.drawImage(img,10,10);
+
+
+    //Variables
+    var ball = new Ball(canvas.width/2,canvas.height - 30);
+    var paddle = new Paddle();
+    var rightPressed = false;
+    var leftPressed = false;
+    var brickRowCount = 5;
+    var brickColumnCount = 3;
+    var brickWidth = 75;
+    var brickHeight = 20;
+    var brickPadding = 10;
+    var brickOffsetTop = 30;
+    var brickOffsetLeft = 30;
+    var score = 0;
+    var hscore = 0;
+    var lives = 3;
+    var track = false; //If true, paddle tracks ball
+    var pausebutton = document.getElementById("PauseButton");
+    var pauseang1 = false;
+    var pauseang2 = false;
+    var rpaddlespeed = 3;
+    var powerupx = 0;
+    var powerupy = 0;
+    var powerupdy = 1;
+    var powerupdx = 0;
+    var powerup2x = 0;
+    var powerup2y = 0;
+    var powerup2dy = 1;
+    var powerup2dx = 0;
+    var moneyy = false;
+    var moneeyy = false;
+    var statepaddle = false;
+
+
+    //Sets up all the bricks in columns and rows
+    var bricks = [];
+    for(c=0; c<brickColumnCount; c++) {
+        bricks[c] = [];
+        for(r=0; r<brickRowCount; r++) {
+            bricks[c][r] = {x: 0, y: 0, status: 3};
+            console.log(bricks[c][r].color)
+        }
+    }
+
+
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+   // document.addEventListener("mousemove", mouseMoveHandler, false);
+
+
+    //Function that will pause the game when ran.
+
+    function pauseButton() {
+
+
+        if(pausebutton.checked == true) {
+           pauseang1 = ball.dx;
+           pauseang2 = ball.dy;
+           ball.dx = 0;
+           ball.dy = 0;
+           rpaddlespeed = 0;
+           powerup2dy = 0;
+           powerupdy = 0;
+       }
+       else {
+
+                ball.dx = pauseang1;
+                ball.dy = pauseang2;
+                powerup2dy = 1;
+                powerupdy = 1;
+                if(statepaddle == true) {
+                    rpaddlespeed = 5;
+                }
+                else {
+                    rpaddlespeed = 3;
+                }
+
+        }
+
+
+    }
+
+    //Function for the left and right keys
+    function keyDownHandler(e) {
+        if(e.keyCode == 39) {
+            rightPressed = true;
+        }
+        else if(e.keyCode == 37) {
+            leftPressed = true;
+        }
+    }
+    function keyUpHandler(e) {
+        if(e.keyCode == 39) {
+            rightPressed = false;
+        }
+        else if(e.keyCode == 37) {
+            leftPressed = false;
+        }
+    }
+    //Function that will allow the paddle to follow the mouse
+    function mouseMoveHandler(e) {
+        var relativeX = e.clientX - canvas.offsetLeft;
+        if(relativeX > 0 && relativeX < canvas.width) {
+            paddle.paddleX = relativeX - paddle.paddleWidth/2;
+        }
+    }
+   //DETECTS IF THE BALL HITS THE BRICK (COLLISION DETECTION METHOD)
+    function collisionDetection() {
+        for(c=0; c<brickColumnCount; c++) {
+            for(r=0; r<brickRowCount; r++) {
+                var b = bricks[c][r];
+                if(b.status > 0) {
+                    if(b == bricks[2][1] && ball.x > b.x && ball.x < b.x+brickWidth && ball.y > b.y && ball.y < b.y+brickHeight) {
+                        ball.dy = -ball.dy;
+
+                        b.status = b.status-1;
+                        score++;
+                        if(score >= hscore) {
+                            hscore = score;
+                        }
+                        var win = true;
+                        bricks[c][r].color = 1;
+
+                      moneyy = true;
+
+
+                        // drawBricks();
+                        //Look at every brick and if every brick has a staus 0, then I win
+                        //assumes I win
+
+
+                        for(c1 = 0; c1 < brickColumnCount; c1++) {
+                            for(r1 = 0; r1 < brickRowCount; r1++) {
+                                if(bricks[c1][r1].status != 0) {
+                                    win = false;
+                                }
+                            }
+                        }
+                        if(win == true) {
+                            //  hscore = score;
+                            alert("YOU WIN, CONGRATS!");
+                            document.location.reload();
+                        }
+                    }
+
+                    else if(b == bricks[2][2] && ball.x > b.x && ball.x < b.x+brickWidth && ball.y > b.y && ball.y < b.y+brickHeight) {
+                        ball.dy = -ball.dy;
+
+                        b.status = b.status-1;
+                        score++;
+                        if(score >= hscore) {
+                            hscore = score;
+                        }
+                        var win = true;
+                        bricks[c][r].color = 1;
+
+                       moneeyy = true;
+
+
+                        // drawBricks();
+                        //Look at every brick and if every brick has a staus 0, then I win
+                        //assumes I win
+
+
+                        for(c1 = 0; c1 < brickColumnCount; c1++) {
+                            for(r1 = 0; r1 < brickRowCount; r1++) {
+                                if(bricks[c1][r1].status != 0) {
+                                    win = false;
+                                }
+                            }
+                        }
+                        if(win == true) {
+                            //  hscore = score;
+                            alert("YOU WIN, CONGRATS!");
+                            document.location.reload();
+                        }
+                    }
+
+
+                    else if(ball.x > b.x && ball.x < b.x+brickWidth && ball.y > b.y && ball.y < b.y+brickHeight) {
+                        ball.dy = -ball.dy;
+
+                        b.status = b.status-1;
+                        score++;
+                        if(score >= hscore) {
+                            hscore = score;
+                        }
+                        var win = true;
+                        bricks[c][r].color = 1;
+                       // drawBricks();
+                      //Look at every brick and if every brick has a staus 0, then I win
+                        //assumes I win
+                        for(c1 = 0; c1 < brickColumnCount; c1++) {
+                            for(r1 = 0; r1 < brickRowCount; r1++) {
+                                if(bricks[c1][r1].status != 0) {
+                                    win = false;
+                                }
+                            }
+                        }
+                        if(win == true) {
+
+                            alert("YOU WIN, CONGRATS!");
+                            document.location.reload();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //draws the first power up
+    function drawPowerUp1() {
+        ctx.beginPath()
+        ctx.rect(powerupx, powerupy, 10, 50);
+        ctx.fillStyle = "#dd1aaf";
+        ctx.fill();
+        ctx.closePath();
+
+    }
+
+    //Draws the second power up
+    function drawPowerUp2() {
+        ctx.beginPath()
+        ctx.rect(powerup2x, powerup2y, 10, 50);
+        ctx.fillStyle = "#1fcedd";
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    //Draws the ball
+    function drawBall() {
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.ballRadius, 0, Math.PI*2);
+        ctx.fillStyle = "#0095DD";
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    //Draws the paddle
+    function drawPaddle() {
+        ctx.beginPath();
+        if(track == true) {
+            paddle.paddleX = ball.x - paddle.paddleWidth/2;
+        }
+        ctx.rect(paddle.paddleX, canvas.height- paddle.paddleHeight, paddle.paddleWidth, paddle.paddleHeight);
+        ctx.fillStyle = "#0095DD";
+        ctx.fill();
+        ctx.closePath();
+    }
+    //Draws the bricks
+    function drawBricks() {
+
+
+
+        for(c=0; c<brickColumnCount; c++) {
+            for(r=0; r<brickRowCount; r++) {
+                if(bricks[c][r].status > 0) {
+                    var brickX = (r*(brickWidth+brickPadding))+brickOffsetLeft;
+                    var brickY = (c*(brickHeight+brickPadding))+brickOffsetTop;
+                    bricks[c][r].x = brickX;
+                    bricks[c][r].y = brickY;
+                    ctx.beginPath();
+                    ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                    //write if statements to check brick[c]r[].color
+                    //depending on integer value set different fillstyle
+                    if(bricks[c][r] == bricks[2][1] && bricks[c][r].status == 3) {
+                        ctx.fillStyle = "#dd26b5";
+                        powerupx = bricks[2][1].x;
+                        powerupy = bricks[2][1].y;
+                    }
+                    else if(bricks[c][r] == bricks[2][2] && bricks[c][r].status == 3) {
+                        ctx.fillStyle = "#ddb327";
+                        powerup2x = bricks[2][2].x;
+                        powerup2y = bricks[2][2].y;
+                    }
+
+                    else if(bricks[c][r].status == 3) {
+                        ctx.fillStyle = "#0095DD";
+                    }
+                    else if(bricks[c][r].status == 2) {
+                        ctx.fillStyle = "#dd1a33";
+
+                    }
+                    else {
+                        ctx.fillStyle = "#21dd2e";
+                    }
+
+
+                    ctx.fill();
+                    ctx.closePath();
+
+                }
+            }
+        }
+    }
+    //Draws the score text
+    function drawScore() {
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "#d9ddd2";
+        ctx.fillText("Score: "+score, 200, 20);
+
+    }
+    //Draws the high score text
+    function drawHscore() {
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "#d9ddd2";
+        ctx.fillText("High Score: "+ hscore, 8, 20);
+    }
+    //Draws the lives text
+    function drawLives() {
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "#d9ddd2";
+        ctx.fillText("Lives: "+lives, canvas.width-100, 20);
+    }
+
+    //Draws everything
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+
+        drawBricks();
+        drawBall();
+        drawPaddle();
+        drawScore();
+        drawHscore()
+        drawLives();
+        collisionDetection();
+        if(moneyy == true) {
+            drawPowerUp1();
+        }
+        if(moneeyy == true) {
+            drawPowerUp2();
+        }
+
+        if(ball.x + ball.dx > canvas.width-ball.ballRadius || ball.x + ball.dx < ball.ballRadius) {
+            ball.dx = -ball.dx;
+
+
+        }
+        if(ball.y + ball.dy < ball.ballRadius) {
+            ball.dy = -ball.dy;
+
+        }
+        else if(ball.y + ball.dy > canvas.height-ball.ballRadius) {
+
+            if(ball.x > paddle.paddleX && ball.x < paddle.paddleX + paddle.paddleWidth) {
+                ball.dy = -ball.dy;
+
+            }
+            else {
+                lives--;
+                score= 0;
+                if(!lives) {
+
+                    alert("GAME OVER");
+                    document.location.reload();
+                }
+                else {
+                    ball.x = canvas.width/2;
+                    ball.y = canvas.height-30;
+                    ball.dx = 3;
+                    ball.dy = -3;
+                    paddle.paddleX = (canvas.width-paddle.paddleWidth)/2;
+                }
+            }
+        }
+
+        if(powerupy + powerupdy > canvas.height-2) {
+            if (powerupx > paddle.paddleX && powerupx < paddle.paddleX + paddle.paddleWidth) {
+                paddle.paddleWidth = 200
+
+            }
+
+        }
+
+        if(powerup2y + powerup2dy > canvas.height-2) {
+            if (powerup2x > paddle.paddleX && powerup2x < paddle.paddleX + paddle.paddleWidth) {
+                statepaddle = true;
+                rpaddlespeed = 5;
+            }
+
+        }
+
+        if(rightPressed && paddle.paddleX < canvas.width-paddle.paddleWidth) {
+            paddle.paddleX += rpaddlespeed;
+        }
+        else if(leftPressed && paddle.paddleX > 0) {
+            paddle.paddleX -= rpaddlespeed;
+        }
+
+        //Animations
+        ball.x += ball.dx;
+        ball.y += ball.dy;
+        powerupx += powerupdx;
+        powerupy += powerupdy;
+        powerup2x += powerup2dx;
+        powerup2y += powerup2dy;
+        requestAnimationFrame(draw);
+    }
+
+    draw();
+</script>
+</body>
+</html>
